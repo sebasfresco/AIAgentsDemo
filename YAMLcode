@@ -1,0 +1,46 @@
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: document-analysis-bucket
+
+  DocumentAnalysisLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource: "*"
+
+  DocumentAnalysisFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Role: !GetAtt DocumentAnalysisLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          # Lambda function code here (copy from above)
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 10
+
+  APIGateway:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: DocumentSummaryAPI
+      ProtocolType: HTTP
+      Target: !GetAtt DocumentAnalysisFunction.Arn
